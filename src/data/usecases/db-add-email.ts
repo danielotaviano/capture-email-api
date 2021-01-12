@@ -9,7 +9,6 @@ export class DbAddEmail implements AddEmail {
   }
 
   async add(email: string): Promise<AccountModel> {
-    this.addEmailRepository.add(email)
-    return null
+    return await this.addEmailRepository.add(email)
   }
 }
