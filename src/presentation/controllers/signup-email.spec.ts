@@ -8,7 +8,7 @@ import { SignUpEmailController } from './signup-email'
 const makeAddEmail = (): AddEmail => {
   class AddEmailStub implements AddEmail {
     async add(email: string): Promise<string> {
-      return new Promise(resolve => resolve(email))
+      return new Promise(resolve => resolve('valid_email@mail.com'))
     }
   }
   return new AddEmailStub()
@@ -107,5 +107,20 @@ describe('SignUpEmail Controller', () => {
 
     sut.handle(httpRequest)
     expect(addSpy).toBeCalledWith('any_email@mail.com')
+  })
+  test('should return 500 if AddEmail throws', () => {
+    const { addEmailStub, sut } = makeSut()
+
+    jest.spyOn(addEmailStub, 'add').mockImplementationOnce(() => {
+      throw new Error()
+    })
+    const httpRequest = {
+      body: {
+        email: 'any_email@mail.com'
+      }
+    }
+
+    const httpResponse = sut.handle(httpRequest)
+    expect(httpResponse).toEqual(serverError(new Error()))
   })
 })
