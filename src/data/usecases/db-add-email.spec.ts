@@ -31,11 +31,27 @@ const makeSut = (): SutTypes => {
 }
 
 describe('DbAddEmail UseCase', () => {
-  test('should call AddEmailRepository with correct email', () => {
+  test('should call AddEmailRepository with correct email', async () => {
     const { sut, addEmailRepositoryStub } = makeSut()
     const addSpy = jest.spyOn(addEmailRepositoryStub, 'add')
 
-    sut.add('valid_email@mail.com')
+    await sut.add('valid_email@mail.com')
     expect(addSpy).toBeCalledWith('valid_email@mail.com')
+  })
+  test('should throw if AddEmailRepository throws', async () => {
+    const { sut, addEmailRepositoryStub } = makeSut()
+    jest.spyOn(addEmailRepositoryStub, 'add').mockReturnValueOnce(new Promise((resolve, reject) => reject(new Error())))
+
+    const promise = sut.add('valid_email@mail.com')
+    await expect(promise).rejects.toThrow()
+  })
+  test('should return an account on success', async () => {
+    const { sut } = makeSut()
+
+    const account = await sut.add('valid_email@mail.com')
+    expect(account).toEqual({
+      id: 'valid_id',
+      email: 'valid_email@mail.com'
+    })
   })
 })
