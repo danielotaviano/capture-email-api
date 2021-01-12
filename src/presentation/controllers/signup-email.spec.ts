@@ -1,10 +1,20 @@
+import { AddEmail } from '../../domain/usecases/add-email'
 import { MissingParamError } from '../err/invalid-param-error'
 import { InvalidParamError } from '../err/missing-param-error'
 import { badRequest, serverError } from '../helpers/http-helper'
 import { EmailValidator } from '../protocols/email-validator'
 import { SignUpEmailController } from './signup-email'
 
-const makeEmailValidatorStub = (): EmailValidator => {
+const makeAddEmail = (): AddEmail => {
+  class AddEmailStub implements AddEmail {
+    async add(email: string): Promise<string> {
+      return new Promise(resolve => resolve(email))
+    }
+  }
+  return new AddEmailStub()
+}
+
+const makeEmailValidator = (): EmailValidator => {
   class EmailValidatorStub implements EmailValidator {
     isValid(email: string): boolean {
       return true
@@ -16,15 +26,18 @@ const makeEmailValidatorStub = (): EmailValidator => {
 interface SutTypes {
   sut: SignUpEmailController,
   emailValidatorStub: EmailValidator
+  addEmailStub: AddEmail
 }
 
 const makeSut = (): SutTypes => {
-  const emailValidatorStub = makeEmailValidatorStub()
-  const sut = new SignUpEmailController(emailValidatorStub)
+  const emailValidatorStub = makeEmailValidator()
+  const addEmailStub = makeAddEmail()
+  const sut = new SignUpEmailController(emailValidatorStub, addEmailStub)
 
   return {
     sut,
-    emailValidatorStub
+    emailValidatorStub,
+    addEmailStub
   }
 }
 
@@ -81,5 +94,18 @@ describe('SignUpEmail Controller', () => {
 
     const httpResponse = sut.handle(httpRequest)
     expect(httpResponse).toEqual(serverError(new Error()))
+  })
+  test('should call AddEmail with correct email', () => {
+    const { addEmailStub, sut } = makeSut()
+
+    const addSpy = jest.spyOn(addEmailStub, 'add')
+    const httpRequest = {
+      body: {
+        email: 'any_email@mail.com'
+      }
+    }
+
+    sut.handle(httpRequest)
+    expect(addSpy).toBeCalledWith('any_email@mail.com')
   })
 })
